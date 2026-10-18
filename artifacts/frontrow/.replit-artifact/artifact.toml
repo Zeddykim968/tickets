@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "FrontRow Marketplace"
+description = "A live-sport ticket marketplace with exact seat selection, live availability, timed reservations, and Paystack checkout."
+version = "1.0.0"
+id = "artifacts/frontrow"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23975
+
+[services.development]
+run = "pnpm --filter @workspace/frontrow run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/frontrow", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/frontrow/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23975"
+BASE_PATH = "/"

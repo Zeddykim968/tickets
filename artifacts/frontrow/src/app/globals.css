@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (Tailwind v4 defaults to prefers-color-scheme). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* --------------------------------------------------------------------------
+   Design tokens
+   Colours are OKLCH: perceptually uniform, so the emerald "in stock" scale
+   stays legible at every lightness. Values live here as CSS variables so the
+   shadcn primitives only ever reference var(--color-*).
+   -------------------------------------------------------------------------- */
+:root {
+  --background: oklch(0.995 0.002 265);
+  --foreground: oklch(0.21 0.015 265);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+
+  --muted: oklch(0.968 0.004 265);
+  --muted-foreground: oklch(0.52 0.015 265);
+
+  --border: oklch(0.922 0.005 265);
+  --input: oklch(0.922 0.005 265);
+  --ring: oklch(0.62 0.13 162);
+
+  /* The pitch green: primary actions. */
+  --primary: oklch(0.55 0.14 162);
+  --primary-foreground: oklch(0.99 0.01 162);
+
+  /* Amber: scarcity and "act now" accents. */
+  --accent: oklch(0.73 0.17 55);
+  --accent-foreground: oklch(0.26 0.06 55);
+
+  --destructive: oklch(0.58 0.2 25);
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: oklch(0.16 0.012 265);
+  --foreground: oklch(0.97 0.003 265);
+
+  --card: oklch(0.2 0.014 265);
+  --card-foreground: var(--foreground);
+
+  --muted: oklch(0.26 0.014 265);
+  --muted-foreground: oklch(0.7 0.012 265);
+
+  --border: oklch(0.29 0.014 265);
+  --input: oklch(0.29 0.014 265);
+  --ring: oklch(0.68 0.13 162);
+
+  --primary: oklch(0.68 0.14 162);
+  --primary-foreground: oklch(0.16 0.02 162);
+
+  --accent: oklch(0.78 0.15 60);
+  --accent-foreground: oklch(0.2 0.04 60);
+
+  --destructive: oklch(0.68 0.19 25);
+}
+
+@theme inline {
+  /* No next/font network fetch at build time - a system stack keeps the
+     starter building offline and still looks right on every OS. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-2xl: calc(var(--radius) + 0.5rem);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Prices and seat numbers are scanned in columns: align the digits. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 25%, transparent);
+  }
+}
+
+@layer components {
+  /* Soft stadium glow used behind the marketing hero. */
+  .stadium-glow {
+    background-image:
+      radial-gradient(ellipse 70% 50% at 50% -10%, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent 70%),
+      radial-gradient(ellipse 40% 40% at 85% 10%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 70%);
+  }
+
+  /* Repeating mown-stripe texture for section headers. */
+  .pitch-stripes {
+    background-image: repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-primary) 10%, transparent) 0 20px,
+      transparent 20px 40px
+    );
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--muted) 25%,
+      color-mix(in oklab, var(--muted) 55%, var(--card)) 37%,
+      var(--muted) 63%
+    );
+    background-size: 400% 100%;
+    animation: skeleton-sweep 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-sweep {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
