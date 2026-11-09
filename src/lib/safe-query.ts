@@ -22,8 +22,9 @@ export async function tryQuery<T>(
   try {
     return { data: await run(), error: null };
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : String(cause);
-    console.error(`[query:${label}] ${message}`);
-    return { data: fallback, error: message };
-  }
+  const root: any = (cause as any)?.cause ?? cause;
+  const message = root?.message || root?.errors?.map((e: any) => `${e.address}:${e.port} ${e.code}`).join(", ") || String(root);
+  console.error(`[query:${label}] ${message}`, "| code:", root?.code);
+  return { data: fallback, error: message };
+}
 }

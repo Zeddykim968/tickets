@@ -1,8 +1,7 @@
 /**
  * All money in this codebase is stored as an integer number of *minor units*
  * (kobo for NGN, cents for USD/GBP/EUR). Never floats, never `Money` objects
- * in the database - this matches what Paystack expects in its `amount` field,
- * so no conversion is needed when creating a transaction.
+ * in the database. Provider-specific amount conversion happens at checkout.
  */
 // Re-exported from the schema's `currency_code` enum rather than re-declared, so
 // there is exactly one definition of which currencies exist. `import type` is
@@ -56,4 +55,3 @@ export function savings(originalMinorUnits: number | null | undefined, currentMi
   if (!originalMinorUnits || originalMinorUnits <= currentMinorUnits) return 0;
   return originalMinorUnits - currentMinorUnits;
 }
-

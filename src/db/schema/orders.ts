@@ -26,7 +26,7 @@ export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 
 /**
  * An order is created the moment a hold is acquired (status = "pending") and
- * is only promoted to "paid" by the Paystack webhook. The row is therefore the
+ * is only promoted to "paid" by the payment webhook. The row is therefore the
  * durable record of a hold, which is what makes the Redis TTL safe: if the TTL
  * lapses, the pending order is simply swept as "abandoned".
  */
@@ -35,7 +35,7 @@ export const orders = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** Paystack reference. Unique so webhook replays are idempotent. */
+    /** Marketplace order reference, unique so webhook replays are idempotent. */
     reference: text("reference").notNull(),
     /** The Redis hold id this order was born from. One order per hold. */
     holdId: uuid("hold_id").notNull(),
@@ -57,10 +57,6 @@ export const orders = pgTable(
 
     /** Mirrors the Redis hold deadline; the checkout page hard-fails past this. */
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-
-    paystackAuthorizationUrl: text("paystack_authorization_url"),
-    paystackAccessCode: text("paystack_access_code"),
-    paystackChannel: text("paystack_channel"),
 
     paidAt: timestamp("paid_at", { withTimezone: true }),
     failedAt: timestamp("failed_at", { withTimezone: true }),

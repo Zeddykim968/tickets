@@ -3,7 +3,6 @@
 import { AlertCircle, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { initializePaymentAction } from "@/features/checkout/actions";
 import type { CurrencyCode } from "@/features/events/types";
 import { formatMoney } from "@/lib/money";
 
@@ -15,11 +14,7 @@ export type PayButtonProps = {
 };
 
 /**
- * Kicks off the Paystack transaction and hands the browser over to their
- * hosted checkout with a full-page navigation (`window.location.assign`).
- *
- * Paystack's checkout cannot be embedded in an iframe, so a client-side route
- * push would be wrong here.
+ * Creates a NOWPayments invoice and hands the browser over to its hosted checkout.
  */
 export function PayButton({ holdId, totalCents, currency, disabled }: PayButtonProps) {
   const [isPending, setIsPending] = useState(false);
@@ -30,17 +25,25 @@ export function PayButton({ holdId, totalCents, currency, disabled }: PayButtonP
     setIsPending(true);
     setError(null);
 
-    const result = await initializePaymentAction({ holdId });
+    try {
+      const response = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ holdId }),
+      });
+      const result = (await response.json()) as { payUrl?: string; error?: string };
+      if (!response.ok || !result.payUrl) {
+        setIsPending(false);
+        setError(result.error ?? "NOWPayments could not start that payment. Please try again.");
+        return;
+      }
 
-    if (!result.ok) {
+      window.location.assign(result.payUrl);
+    } catch (requestError) {
+      console.error("[checkout] NOWPayments request failed:", requestError);
       setIsPending(false);
-      setError(result.message);
-      return;
+      setError("Something went wrong starting the payment. Please try again.");
     }
-
-    // Leave `isPending` true: the button should stay in its loading state
-    // until the browser actually leaves the page.
-    window.location.assign(result.authorizationUrl);
   }
 
   return (
@@ -55,7 +58,7 @@ export function PayButton({ holdId, totalCents, currency, disabled }: PayButtonP
         {isPending ? (
           <>
             <Loader2 className="animate-spin" />
-            Opening Paystack…
+            Opening NOWPayments…
           </>
         ) : (
           <>
@@ -67,7 +70,7 @@ export function PayButton({ holdId, totalCents, currency, disabled }: PayButtonP
 
       <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
         <ShieldCheck className="size-3" />
-        Secured by Paystack · cards, bank transfer and USSD
+        Secured by NOWPayments · cryptocurrency
       </p>
 
       {error && (

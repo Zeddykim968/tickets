@@ -8,7 +8,7 @@ import type { HoldManifest } from "@/features/holds/types";
 
 /**
  * Order lookups. `holdId` is the key the checkout page arrives with; `reference`
- * is the key Paystack's webhook arrives with. Both are unique-indexed in the
+ * is the key payment webhooks arrive with. Both are unique-indexed in the
  * schema, so each is a single indexed point read.
  */
 export async function getOrderByHoldId(holdId: string) {
@@ -16,7 +16,7 @@ export async function getOrderByHoldId(holdId: string) {
   return row ?? null;
 }
 
-/** The webhook's correlation key: Paystack only ever knows the reference. */
+/** The webhook's correlation key. */
 export async function getOrderByReference(reference: string) {
   const [row] = await getDb().select().from(orders).where(eq(orders.reference, reference)).limit(1);
   return row ?? null;

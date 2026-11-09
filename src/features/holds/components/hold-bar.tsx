@@ -47,8 +47,7 @@ export function HoldBar({ eventId, currency, feeBps, ttlSeconds }: HoldBarProps)
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
 
-  // Remember the buyer's email between sessions - it is the one field Paystack
-  // genuinely needs, and retyping it on every purchase is hostile.
+  // Remember the buyer's email between sessions so it need not be retyped.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(EMAIL_STORAGE_KEY);
@@ -259,7 +258,7 @@ export function HoldBar({ eventId, currency, feeBps, ttlSeconds }: HoldBarProps)
                   </Button>
 
                   <p className="w-full text-[11px] text-muted-foreground">
-                    Paying is a separate step. We will not charge you until you confirm on Paystack.
+                    Paying is a separate step. You will complete payment through NOWPayments.
                   </p>
                 </div>
               </form>

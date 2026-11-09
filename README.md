@@ -3,7 +3,7 @@
 A viagogo-style resale marketplace for live sport, built on Next.js 15 (App Router).
 Buyers browse a real stadium map with **live** availability, drill into individual rows
 with view-quality flags and discount-versus-face-value pricing, and hold what they want
-for **10 minutes** while they pay through Paystack.
+for **10 minutes** while they pay through a NOWPayments hosted crypto invoice.
 
 ---
 
@@ -16,7 +16,8 @@ for **10 minutes** while they pay through Paystack.
 | Database     | PostgreSQL via Drizzle ORM (`postgres-js`)                              |
 | Seat holds   | Redis with Lua scripts and key TTLs                                     |
 | UI state     | Zustand                                                                 |
-| Payments     | Paystack (server-side initialize + signed webhook)                      |
+| Payments     | NOWPayments hosted crypto invoices and signed settlement webhook        |
+| Event data   | Ticketmaster Discovery API catalog with Ticketmaster-hosted purchase     |
 | Validation   | Zod on every server-action boundary                                     |
 
 ---
@@ -31,7 +32,8 @@ src/
 ├── app/                                  # routing only - thin by design
 │   ├── api/
 │   │   ├── events/[eventId]/availability/route.ts   # live availability polling
-│   │   └── webhooks/paystack/route.ts               # signed payment webhook
+│   │   ├── payments/checkout/route.ts               # create a NOWPayments invoice
+│   │   └── nowpayments/webhook/route.ts             # signed settlement webhook
 │   ├── auth/{login,register}/page.tsx
 │   ├── checkout/[holdId]/page.tsx        # renders every state of a hold
 │   ├── marketplace/
@@ -69,9 +71,7 @@ src/
 │   │   ├── keys.ts  constants.ts  validation.ts  types.ts
 │   │   └── components/{hold-bar,hold-countdown,release-seats-button}.tsx
 │   ├── orders/{pricing,queries}.ts
-│   ├── checkout/
-│   │   ├── paystack.ts  actions.ts
-│   │   └── components/{pay-button,checkout-countdown}.tsx
+│   ├── checkout/components/{pay-button,checkout-countdown}.tsx
 │   └── auth/{actions,constants}.ts + components/auth-form.tsx
 │
 ├── lib/            env.ts  money.ts  datetime.ts  utils.ts  safe-query.ts  load-env.ts
@@ -82,17 +82,51 @@ src/
 
 ## Getting started
 
-```bash
-cp .env.example .env.local      # fill in DATABASE_URL, REDIS_URL, PAYSTACK_SECRET_KEY
+Follow [GO_LIVE.md](./GO_LIVE.md) for database provisioning and migrations,
+local testing, admin setup, and production deployment instructions.
+
+Quick start (PowerShell, after PostgreSQL and Redis are available):
+
+```powershell
+Copy-Item .env.example .env.local
 npm install
-npm run db:push                 # create tables
-npm run db:seed                 # load a demo stadium (~480 listings)
-npm run dev                     # http://localhost:3000
+npm run db:migrate
+npm run db:seed
+npm run dev
 ```
 
 Useful scripts: `npm run typecheck`, `npm run lint`, `npm test`, `npm run db:studio`,
 `npm run db:generate` → `npm run db:migrate` for versioned migrations,
 `npm run db:reconcile` for the drift sweeper.
+
+### Fixtures API and private admin
+
+`GET /api/matches?limit=24` returns the public fixture feed and
+`GET /api/matches/:matchId` returns a fixture, sections, and listings. The
+detail route accepts either the event UUID or slug. Both read from the same
+PostgreSQL `events` table used by `/marketplace`. The current fixtures are
+demo seed data; no external sports-data provider is configured.
+
+The public `/ticketmaster` catalog reads sports events from Ticketmaster Discovery
+data synced to PostgreSQL. Buyers follow Ticketmaster purchase links for those
+events; Discovery does not provide complete seat inventory or in-app purchases.
+Set the server-only `TICKETMASTER_API_KEY` and comma-separated
+`TICKETMASTER_MARKET_IDS`, migrate the catalog schema, then run a bounded sync
+from the private admin dashboard. The `/v1` API exposes catalog capabilities,
+matches, match details/images/seat maps/availability/purchase links, teams,
+venues, sports taxonomy, and search suggestions. See [GO_LIVE.md](./GO_LIVE.md)
+for the route and operating details.
+
+The private `/admin` area is not linked from the public navigation and has no
+registration route. Provision the single admin using `ADMIN_EMAIL`,
+`ADMIN_PASSWORD` (16+ characters), and `ADMIN_SESSION_SECRET` (32+ characters)
+in server-only environment variables. Admin sessions are signed, HTTP-only,
+and expire after eight hours. The dashboard shows fixture, inventory, order,
+connection, and paid-order metrics, allows fixture sale-state updates, and
+provides a Ticketmaster catalog sync/quota panel.
+Payment/provider secrets are never displayed or editable in the dashboard.
+Ticketmaster Discovery catalog syncing is available when its server-side key and
+market IDs are configured. It is separate from the seeded marketplace inventory.
 
 Without a configured database the UI renders a "Data layer not configured" banner
 instead of a 500 — every page-level read goes through `tryQuery`.
@@ -142,16 +176,16 @@ block releases best-effort. Either way the seats are not parked for ten minutes.
 
 ### Payments
 
-`initializePaymentAction` recomputes the total from the **order row** and sends it to
-Paystack. The webhook (`/api/webhooks/paystack`) then:
-
-1. HMAC-SHA512s the **raw** body and compares the `x-paystack-signature` header in
-   constant time (this is why the route calls `request.text()` before parsing).
-2. Re-verifies the transaction with Paystack — the webhook body is only a *trigger*.
-3. Rejects on an amount mismatch rather than fulfilling.
-4. Is idempotent: the order must still be `pending` for seats to move, and Paystack's
-   at-least-once retries converge on the same state.
-5. Releases the Redis locks once Postgres owns the seats.
+The checkout route reads the amount and currency from the **order row**, creates
+a NOWPayments hosted crypto invoice, and returns its invoice URL. The webhook
+(`/api/nowpayments/webhook`) verifies NOWPayments' sorted-payload HMAC in constant
+time, checks the invoice amount and currency, deduplicates events, and fulfills
+orders only when the payment reaches `finished` and the seats are still held.
+Successful fulfillment marks seats sold and releases their Redis locks. Funds
+settle to the merchant account using its settlement settings in NOWPayments;
+the application does not send wallet payouts. Test callbacks, duplicate
+delivery, expiry, and failure cases in the NOWPayments sandbox before enabling
+production payments.
 
 ---
 
@@ -191,8 +225,8 @@ a failing run cannot leave locks behind and poison the next one.
   "sold out" because one packet dropped would be a worse lie than slightly old data.
 - **Prices never come from the client.** The store holds prices purely for optimistic UI;
   `reserveSeats` re-reads every price from Postgres.
-- **Money is integer minor units** (kobo), matching Paystack's `amount` field exactly, so
-  there is no conversion step in which a rounding bug can hide.
+- **Money is integer minor units** (kobo); the checkout converts the order total to
+  the major-unit amount expected by NOWPayments.
 - **Availability is derived, not stored**: `available = listed − sold − held`, with the two
   halves coming from Postgres and Redis respectively.
 - **Server components by default.** Only the interactive leaves are `"use client"` —

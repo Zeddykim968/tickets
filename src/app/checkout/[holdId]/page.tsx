@@ -34,8 +34,14 @@ export const metadata: Metadata = {
 // show a buyer a live countdown for a hold that has already lapsed.
 export const dynamic = "force-dynamic";
 
-export default async function CheckoutPage({ params }: { params: Promise<{ holdId: string }> }) {
-  const { holdId } = await params;
+export default async function CheckoutPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ holdId: string }>;
+  searchParams: Promise<{ payment?: string }>;
+}) {
+  const [{ holdId }, query] = await Promise.all([params, searchParams]);
   const view = await getCheckoutView(holdId);
 
   if (view.state === "not_found") {
@@ -243,6 +249,11 @@ export default async function CheckoutPage({ params }: { params: Promise<{ holdI
             </dl>
 
             <div className="mt-5">
+              {query.payment === "returned" && (
+                <p className="mb-3 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                  NOWPayments returned you to checkout. We&apos;re waiting for its payment confirmation; refresh this page shortly.
+                </p>
+              )}
               <PayButton holdId={holdId} totalCents={hold.totalCents} currency={currency} />
             </div>
 

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { href: "/marketplace", label: "Events" },
+  { href: "/ticketmaster", label: "Discover matches" },
   { href: "/marketplace?view=weekend", label: "This weekend" },
   { href: "/sell", label: "Sell tickets" },
   { href: "/help", label: "Help" },

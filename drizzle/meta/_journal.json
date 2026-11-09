@@ -8,6 +8,41 @@
       "when": 1790539611561,
       "tag": "0000_jazzy_dark_phoenix",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793975367489,
+      "tag": "0001_rapid_the_fallen",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793975631259,
+      "tag": "0002_same_madame_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794041704180,
+      "tag": "0003_true_franklin_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794064605162,
+      "tag": "0004_transfi_checkout",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794150786546,
+      "tag": "0005_nowpayments_gateway",
+      "breakpoints": true
     }
   ]
 }

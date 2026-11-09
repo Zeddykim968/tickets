@@ -9,17 +9,13 @@ import { z } from "zod";
  *
  * **Per-subsystem** because one "validate the whole environment" schema couples
  * everything to everything: a deployment that has Postgres and Redis but has
- * not configured Paystack yet would find its *availability* endpoint throwing
- * about a payment key. Each accessor below therefore validates only the
+ * not configured every integration would find its availability endpoint
+ * throwing about an unrelated key. Each accessor below validates only the
  * variables it actually needs, and reports only those.
  */
 
 const databaseEnvSchema = z.object({
   DATABASE_URL: z.string().trim().min(1, "DATABASE_URL is required"),
-});
-
-const paystackEnvSchema = z.object({
-  PAYSTACK_SECRET_KEY: z.string().trim().min(1, "PAYSTACK_SECRET_KEY is required"),
 });
 
 function describeMissing(error: z.ZodError, fileHint: string) {
@@ -41,22 +37,6 @@ export function databaseUrl(): string {
 
   cachedDatabaseUrl = parsed.data.DATABASE_URL;
   return cachedDatabaseUrl;
-}
-
-// ---------------------------------------------------------------------------
-// Paystack
-// ---------------------------------------------------------------------------
-
-let cachedPaystackSecretKey: string | null = null;
-
-export function paystackSecretKey(): string {
-  if (cachedPaystackSecretKey) return cachedPaystackSecretKey;
-
-  const parsed = paystackEnvSchema.safeParse(process.env);
-  if (!parsed.success) throw new Error(describeMissing(parsed.error, ".env.example"));
-
-  cachedPaystackSecretKey = parsed.data.PAYSTACK_SECRET_KEY;
-  return cachedPaystackSecretKey;
 }
 
 // ---------------------------------------------------------------------------

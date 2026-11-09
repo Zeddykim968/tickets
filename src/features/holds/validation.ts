@@ -4,7 +4,7 @@ import { MAX_SEATS_PER_HOLD } from "./constants";
 /**
  * Never trust the browser. Seat ids are uuid-validated (so they can only ever
  * be used in a parameterised query) and capped at the hold limit, and the
- * buyer email is normalised before it reaches Paystack.
+ * buyer email is normalised before it reaches the payment provider.
  */
 export const reserveSeatsSchema = z.object({
   eventId: z.string().uuid(),

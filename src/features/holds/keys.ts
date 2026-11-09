@@ -39,5 +39,9 @@ export function seatLockKey(eventId: string, seatId: string) {
 
 /** Extract the seat id back out of a seat lock key returned by Lua. */
 export function seatIdFromLockKey(lockKey: string) {
-  return lockKey.slice(lockKey.lastIndexOf(":") + 1);
+  const match = /^lock:seat:\{ev:[^}]+\}:(.+)$/.exec(lockKey);
+  if (!match) {
+    throw new Error("Invalid seat lock key.");
+  }
+  return match[1];
 }

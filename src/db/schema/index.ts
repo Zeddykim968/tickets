@@ -7,3 +7,5 @@ export * from "./events";
 export * from "./sections";
 export * from "./seats";
 export * from "./orders";
+export * from "./nowpayments";
+export * from "./ticketmaster";

@@ -31,7 +31,7 @@ const FEATURES = [
   {
     icon: Wallet,
     title: "Pay how you like",
-    body: "Cards, bank transfer and USSD through Paystack. Orders are only fulfilled after the webhook verifies the amount.",
+    body: "Complete checkout securely through a NOWPayments crypto invoice. Orders are fulfilled after the signed settlement webhook confirms success.",
   },
 ];
 
@@ -77,7 +77,7 @@ export default function HomePage() {
             {[
               { value: "10 min", label: "seat hold window" },
               { value: "Redis TTL", label: "atomic reservations" },
-              { value: "Paystack", label: "verified payments" },
+              { value: "NOWPayments", label: "hosted crypto checkout" },
             ].map((stat) => (
               <div key={stat.label} className="rounded-xl border border-border bg-card/70 px-4 py-3">
                 <dt className="text-lg font-bold tracking-tight">{stat.value}</dt>

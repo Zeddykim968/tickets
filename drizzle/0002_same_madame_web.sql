@@ -1,0 +1,1 @@
+ALTER TABLE "payments" DROP CONSTRAINT "payments_transfi_order_id_unique";
